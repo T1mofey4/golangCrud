@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/http"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	_ "modernc.org/sqlite"
 )
 
 const (
-	dbDriver = "mysql"
+	dbDriver = "sqlite"
 	dbUser   = "root"
 	dbPass   = "toor"
 	dbName   = "gocrud_app"
@@ -25,7 +25,7 @@ type User struct {
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open(dbDriver, dbUser+":"+dbPass+"@/"+dbName)
+	db, err := sql.Open(dbDriver, "gocrud_app.db")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -34,7 +34,6 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	//Parse JSON data from the request body
 	var user User
 	json.NewDecoder(r.Body).Decode(&user)
-
 	CreateUser(db, user.Name, user.Email)
 	if err != nil {
 		http.Error(w, "Filed to create user", http.StatusInternalServerError)
@@ -43,14 +42,16 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintln(w, "User created successfully")
+
 }
 
 func CreateUser(db *sql.DB, name, email string) error {
-	query := "INSERT INTO users (name, email) VALUES (?, ?);"
+	query := "INSERT INTO users (name, email) VALUES (?, ?)"
 	_, err := db.Exec(query, name, email)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
