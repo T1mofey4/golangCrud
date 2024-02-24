@@ -94,6 +94,46 @@ func GetUser(db *sql.DB, id int) (*User, error) {
 	return user, nil
 }
 
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open(dbDriver, "gocrud_app.db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	//Get the 'id' from the URL
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	//Convert 'id' to an integer
+	userId, err := strconv.Atoi(idStr)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var user User
+	err = json.NewDecoder(r.Body).Decode(&user)
+
+	UpdateUser(db, userId, user.Name, user.Email)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	fmt.Fprintln(w, "User updated successfully")
+}
+
+func UpdateUser(db *sql.DB, id int, name, email string) error {
+	query := "UPDATE users SET name = ?, email = ? WHERE id = ?"
+	fmt.Println(name, email)
+	_, err := db.Exec(query, name, email, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	//Create a new router
 	r := mux.NewRouter()
@@ -101,7 +141,7 @@ func main() {
 	// Define http routes using the router
 	r.HandleFunc("/user", createUserHandler).Methods("POST")
 	r.HandleFunc("/user/{id}", getUserHandler).Methods("GET")
-	// r.HandleFunc("/user/{id}", updateUserHandler).Methods("PUT")
+	r.HandleFunc("/user/{id}", updateUserHandler).Methods("PUT")
 	// r.HandleFunc("/user/{id}", deleteUserHandler).Methods("DELETE")
 
 	//Start the http server on port 8090
