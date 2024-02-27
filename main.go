@@ -125,12 +125,42 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUser(db *sql.DB, id int, name, email string) error {
 	query := "UPDATE users SET name = ?, email = ? WHERE id = ?"
-	fmt.Println(name, email)
 	_, err := db.Exec(query, name, email, id)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open(dbDriver, "gocrud_app.db")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	//Get id from the URL
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	//Convert id to integer
+	UserId, err := strconv.Atoi(idStr)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	deleteUser(db, UserId)
+
+	fmt.Fprintln(w, "User deleted successfully")
+
+}
+
+func deleteUser(db *sql.DB, id int) error {
+	query := "DELETE FROM users WHERE id=?"
+	_, err := db.Exec(query, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -142,7 +172,7 @@ func main() {
 	r.HandleFunc("/user", createUserHandler).Methods("POST")
 	r.HandleFunc("/user/{id}", getUserHandler).Methods("GET")
 	r.HandleFunc("/user/{id}", updateUserHandler).Methods("PUT")
-	// r.HandleFunc("/user/{id}", deleteUserHandler).Methods("DELETE")
+	r.HandleFunc("/user/{id}", deleteUserHandler).Methods("DELETE")
 
 	//Start the http server on port 8090
 	log.Println("Server listening on :8090")
